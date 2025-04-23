@@ -17,6 +17,7 @@ using System.Text;
 using ValidationException = FluentValidation.ValidationException;
 using System.Linq;
 using Core.Utilites.Business;
+using Business.BusinessAspects.Autofac;
 
 namespace Business.Concrete
 {
@@ -31,7 +32,7 @@ namespace Business.Concrete
             _categoryService = categoryService;
             
         }
-
+        [SecuredOperation("product.add,admin")]
         [ValidationAspect(typeof(ProductValidator))]
         public IResult Add(Product product)
         {
