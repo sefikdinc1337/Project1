@@ -18,6 +18,8 @@ using ValidationException = FluentValidation.ValidationException;
 using System.Linq;
 using Core.Utilites.Business;
 using Business.BusinessAspects.Autofac;
+using Core.Aspects.Autofac.Caching;
+using Core.Aspects.Autofac.Transaction;
 
 namespace Business.Concrete
 {
@@ -34,6 +36,8 @@ namespace Business.Concrete
         }
         [SecuredOperation("product.add,admin")]
         [ValidationAspect(typeof(ProductValidator))]
+        [CacheRemoveAspect("IProductService.Get")]
+
         public IResult Add(Product product)
         {
            IResult result =  BusinessRules.Run(CheckIfProductCountOfCategoryCorrect(product.CategoryID), CheckIfProductNameIsExists(product.ProductName), CheckIfNumberOfCategoryIsHigher());
@@ -47,7 +51,7 @@ namespace Business.Concrete
  
             
         }
-
+        [CacheAspect]
         public IDataResult<List<Product>> GetAll()
         {
             //İş Kodları
@@ -66,7 +70,7 @@ namespace Business.Concrete
             }
             return new  SuccessDataResult<List<Product>>(_productDal.GetAll(p => p.CategoryID == id),Messages.GetAllSuccess);
         }
-
+        [CacheAspect]
         public IDataResult<Product> GetById(int productId)
         {
             return new  SuccessDataResult<Product>(_productDal.Get(p => p.ProductID == productId),Messages.GetAllSuccess);
@@ -83,6 +87,7 @@ namespace Business.Concrete
 
         }
         [ValidationAspect(typeof(ProductValidator))]
+        [CacheRemoveAspect("IProductService.Get")]
         public IResult Update(Product product)
         {
             
@@ -100,11 +105,14 @@ namespace Business.Concrete
         private IResult CheckIfProductNameIsExists(string productName)
         {
             var result = _productDal.Get(p => p.ProductName == productName);
-            if (result.ProductName == productName)
+
+            if (result != null && result.ProductName == productName)
             {
                 return new ErrorResult(Messages.ProductNameAlreadyUsed);
             }
+
             return new SuccessResult();
+
         }
         private IResult CheckIfNumberOfCategoryIsHigher()
         {
@@ -115,6 +123,10 @@ namespace Business.Concrete
             }
             return new SuccessResult();
         }
-
+        [TransactionScopeAspect]
+        public IResult AddTransactionalTest(Product product)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
